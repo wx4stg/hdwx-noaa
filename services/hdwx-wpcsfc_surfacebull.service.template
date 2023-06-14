@@ -1,0 +1,16 @@
+[Unit]
+Description=hdwx-wpcsfc_surfacebull
+PartOf=hdwx.target
+
+[Service]
+ExecStart=$pathToPython surfacebulletin.py
+ExecStop=rsync -ulrH ./output/. $targetDir --exclude=productTypes/ --exclude="*.tmp"
+Restart=always
+RestartSec=300
+RuntimeMaxSec=600
+WorkingDirectory=$pathToClone/hdwx-wpcsfc/
+User=$myUsername
+SyslogIdentifier=hdwx-wpcsfc_surfacebull
+
+[Install]
+WantedBy=hdwx.target
