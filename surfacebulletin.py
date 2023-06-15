@@ -132,11 +132,11 @@ if __name__ == "__main__":
     validTime = df.valid[0]
     gisSaveDir = path.join(basePath, "output", "gisproducts", "noaa", "wpcsfcbull", validTime.strftime("%Y"), validTime.strftime("%m"), validTime.strftime("%d"), validTime.strftime("%H00"))
     staticSaveDir = path.join(basePath, "output", "products", "noaa", "wpcsfcbull", validTime.strftime("%Y"), validTime.strftime("%m"), validTime.strftime("%d"), validTime.strftime("%H00"))
-    # if path.exists(gisSaveDir) and path.exists(staticSaveDir):
-    #     filesInTargets = listdir(gisSaveDir)
-    #     filesInTargets.extend(listdir(staticSaveDir))
-    #     if len(filesInTargets) > 0:
-    #         exit()
+    if path.exists(gisSaveDir) and path.exists(staticSaveDir):
+        filesInTargets = listdir(gisSaveDir)
+        filesInTargets.extend(listdir(staticSaveDir))
+        if len(filesInTargets) > 0:
+            exit()
     # Set up a default figure and map
     gisFig = plt.figure()
     gisAx = plt.axes(projection=ccrs.epsg(3857))
