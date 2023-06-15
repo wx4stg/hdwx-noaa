@@ -1,8 +1,9 @@
 import cartopy.crs as ccrs
 import cartopy.feature as cfeat
 import matplotlib.pyplot as plt
-import urllib.request
+import urllib
 from io import BytesIO
+import metpy
 from metpy.io import parse_wpc_surface_bulletin
 from metpy.io import parse_metar_file
 from metpy.units import pandas_dataframe_to_unit_arrays
@@ -11,13 +12,15 @@ from metpy import plots as mpplots
 from metpy.units import units
 from metpy.plots import ColdFront, OccludedFront, StationaryFront, StationPlot, WarmFront
 from metpy.cbook import get_test_data
+from metpy import constants
 from os import path, listdir, remove
 from pathlib import Path
 from siphon.catalog import TDSCatalog
 import pandas as pd
 from matplotlib.patheffects import withStroke
+import xarray as xr
 import numpy as np
-from scipy.interpolate import griddata
+from scipy import ndimage
 
 
 basePath = path.realpath(path.dirname(__file__))
@@ -37,6 +40,23 @@ def set_size(w,h, ax=None):
     figh = float(h)/(t-b)
     ax.figure.set_size_inches(figw, figh)
 
+
+
+def addRTMAPressure(ax, validTime):
+    rtmaLink = f"https://nomads.ncep.noaa.gov/cgi-bin/filter_rtma2p5.pl?dir=%2Frtma2p5.{validTime.strftime('%Y%m%d')}&file=rtma2p5.t{validTime.strftime('%H')}z.2dvaranl_ndfd.grb2_wexp&var_HGT=on&var_PRES=on&var_TMP=on&lev_2_m_above_ground=on&lev_surface=on"
+    urllib.request.urlretrieve(rtmaLink, "rtma.grib2")
+    rtmaData = xr.open_dataset("rtma.grib2", engine="cfgrib", backend_kwargs={"indexpath" : ""})
+    orogData = rtmaData.orog.metpy.quantify()
+    barometricPressData = rtmaData.sp.metpy.quantify()
+    tempData = rtmaData.t2m.metpy.quantify()
+    mslpData = barometricPressData * np.exp(orogData*constants.earth_gravity/(constants.dry_air_gas_constant*tempData))
+    mslpData = mslpData.metpy.convert_units("hPa")
+    mslpData.data = ndimage.gaussian_filter(mslpData.data, 20)
+    levelsToContour = np.arange((np.nanmin(mslpData.data) // 4) * 4, np.nanmax(mslpData.data)+4, 4)
+    contourmap = ax.contour(mslpData.longitude, mslpData.latitude, mslpData, colors="maroon", levels=levelsToContour, transform=ccrs.PlateCarree(), transform_first=True, linewidths=0.5)
+    contourLabels = ax.clabel(contourmap, levels=levelsToContour, fontsize=8, inline_spacing=-9)
+    remove("rtma.grib2")
+    return ax
 
 
 def addStationPlot(ax, validTime):
@@ -61,11 +81,6 @@ def addStationPlot(ax, validTime):
     metarDataFilt = metarDataFilt.drop_duplicates(subset=["station_id"], keep="last")
     metarData = pandas_dataframe_to_unit_arrays(metarDataFilt, metarUnits)
     metarData["u"], metarData["v"] = mpcalc.wind_components(metarData["wind_speed"], metarData["wind_direction"])
-    lonGrid = np.linspace(-130, -60, 1000)
-    latGrid = np.linspace(20, 50, 1000)
-    lonGrid, latGrid = np.meshgrid(lonGrid, latGrid)
-    mslpGrid = griddata((metarData["longitude"], metarData["latitude"]), metarData["air_pressure_at_sea_level"], (lonGrid, latGrid), method="linear")
-    ax.contour(lonGrid, latGrid, mslpGrid, colors="maroon", transform=ccrs.PlateCarree(), linewidths=1, levels=range(900, 1100, 4))
     locationsInMeters = ccrs.LambertConformal().transform_points(ccrs.PlateCarree(), metarData["longitude"].m, metarData["latitude"].m)
     overlap_prevent = mpcalc.reduce_point_density(locationsInMeters[:, 0:2], 200000)
     stations = mpplots.StationPlot(ax, metarData["longitude"][overlap_prevent], metarData["latitude"][overlap_prevent], clip_on=True, transform=ccrs.PlateCarree(), fontsize=6)
@@ -75,6 +90,7 @@ def addStationPlot(ax, validTime):
     stations.plot_symbol((-1.5, 0), metarData['current_wx1_symbol'][overlap_prevent], mpplots.current_weather, path_effects=[withStroke(linewidth=1, foreground="white")], fontsize=9)
     stations.plot_symbol("C", metarData["cloud_coverage"][overlap_prevent], mpplots.sky_cover)
     stations.plot_barb(metarData["u"][overlap_prevent], metarData["v"][overlap_prevent], sizes={"emptybarb" : 0})
+    remove(dataset.name)
     return ax
 
 
@@ -116,11 +132,11 @@ if __name__ == "__main__":
     validTime = df.valid[0]
     gisSaveDir = path.join(basePath, "output", "gisproducts", "noaa", "wpcsfcbull", validTime.strftime("%Y"), validTime.strftime("%m"), validTime.strftime("%d"), validTime.strftime("%H00"))
     staticSaveDir = path.join(basePath, "output", "products", "noaa", "wpcsfcbull", validTime.strftime("%Y"), validTime.strftime("%m"), validTime.strftime("%d"), validTime.strftime("%H00"))
-    if path.exists(gisSaveDir) and path.exists(staticSaveDir):
-        filesInTargets = listdir(gisSaveDir)
-        filesInTargets.extend(listdir(staticSaveDir))
-        if len(filesInTargets) > 0:
-            exit()
+    # if path.exists(gisSaveDir) and path.exists(staticSaveDir):
+    #     filesInTargets = listdir(gisSaveDir)
+    #     filesInTargets.extend(listdir(staticSaveDir))
+    #     if len(filesInTargets) > 0:
+    #         exit()
     # Set up a default figure and map
     gisFig = plt.figure()
     gisAx = plt.axes(projection=ccrs.epsg(3857))
@@ -130,6 +146,7 @@ if __name__ == "__main__":
     ax.set_extent([-130, -60, 20, 50], crs=ccrs.PlateCarree())
  
     plot_bulletin(gisAx, df)
+    addRTMAPressure(ax, validTime)
     addStationPlot(ax, validTime)
     plot_bulletin(ax, df)
 
