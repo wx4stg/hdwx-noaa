@@ -6,7 +6,7 @@ PartOf=hdwx.target
 ExecStart=$pathToPython spc.py
 ExecStop=rsync -ulrH ./output/. $targetDir --exclude=productTypes/ --exclude="*.tmp"
 Restart=always
-RestartSec=300
+RestartSec=3600
 RuntimeMaxSec=600
 WorkingDirectory=$pathToClone/hdwx-noaa/
 User=$myUsername
