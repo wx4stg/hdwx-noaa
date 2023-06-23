@@ -1,5 +1,5 @@
 [Unit]
-Description=hdwx-wpcsfc_surfacebull
+Description=hdwx-noaa_wpcsfc
 PartOf=hdwx.target
 
 [Service]
@@ -8,9 +8,9 @@ ExecStop=rsync -ulrH ./output/. $targetDir --exclude=productTypes/ --exclude="*.
 Restart=always
 RestartSec=300
 RuntimeMaxSec=600
-WorkingDirectory=$pathToClone/hdwx-wpcsfc/
+WorkingDirectory=$pathToClone/hdwx-noaa/
 User=$myUsername
-SyslogIdentifier=hdwx-wpcsfc_surfacebull
+SyslogIdentifier=hdwx-noaa_wpcsfc
 
 [Install]
 WantedBy=hdwx.target

@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+# Recreates WPC surface analysis from WPC bulletin, METARs, and RTMA pressure data
+# Created 14 June 2023 by Sam Gardner <stgardner4@tamu.edu>
+
 import cartopy.crs as ccrs
 import cartopy.feature as cfeat
 import matplotlib.pyplot as plt
