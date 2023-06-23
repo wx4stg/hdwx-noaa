@@ -77,18 +77,18 @@ def plotOutlook(data, dayNum, startTime, finalTime, issueTime, outlookType):
         HDWX_helpers.dressImage(fig, ax, f"SPC Day {dayNum} {prettyOutlookType} Outlook", startTime)
         fig.axes[1].get_children()[0].set_text(f"{fig.axes[1].get_children()[0].get_text()} through {finalTime.strftime('%a %-d %b %Y %H%MZ')}")
     if outlookType == "cat":
-            savePaths["1203"] = path.join(basePath, "output", "products", "noaa", "spc" "catout")
-            savePaths["1205"] = path.join(basePath, "output", "products", "noaa", "spc" "LRout")
+            savePaths["1203"] = path.join(basePath, "output", "products", "noaa", "spc", "catout")
+            savePaths["1205"] = path.join(basePath, "output", "products", "noaa", "spc", "LRout")
     elif outlookType == "prob":
             if dayNum >=4:
-                savePaths["1205"] = path.join(basePath, "output", "products", "noaa", "spc" "LRout")
-            savePaths["1207"] = path.join(basePath, "output", "products", "noaa", "spc" "probout")
+                savePaths["1205"] = path.join(basePath, "output", "products", "noaa", "spc", "LRout")
+            savePaths["1207"] = path.join(basePath, "output", "products", "noaa", "spc", "probout")
     elif outlookType == "hail":
-        savePaths["1209"] = path.join(basePath, "output", "products", "noaa", "spc" "hailout")
+        savePaths["1209"] = path.join(basePath, "output", "products", "noaa", "spc", "hailout")
     elif outlookType == "wind":
-        savePaths["1211"] = path.join(basePath, "output", "products", "noaa", "spc" "windout")
+        savePaths["1211"] = path.join(basePath, "output", "products", "noaa", "spc", "windout")
     elif outlookType == "torn":
-        savePaths["1213"] = path.join(basePath, "output", "products", "noaa", "spc" "tornout")
+        savePaths["1213"] = path.join(basePath, "output", "products", "noaa", "spc", "tornout")
     for productID in savePaths.keys():
         savePath = savePaths[productID]
         productID = int(productID)
