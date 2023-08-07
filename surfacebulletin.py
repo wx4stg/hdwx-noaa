@@ -25,6 +25,7 @@ from matplotlib.patheffects import withStroke
 import xarray as xr
 import numpy as np
 from scipy import ndimage
+import sys
 
 
 basePath = path.realpath(path.dirname(__file__))
@@ -136,37 +137,37 @@ if __name__ == "__main__":
     validTime = df.valid[0]
     gisSaveDir = path.join(basePath, "output", "gisproducts", "noaa", "wpcsfcbull", validTime.strftime("%Y"), validTime.strftime("%m"), validTime.strftime("%d"), validTime.strftime("%H00"))
     staticSaveDir = path.join(basePath, "output", "products", "noaa", "wpcsfcbull", validTime.strftime("%Y"), validTime.strftime("%m"), validTime.strftime("%d"), validTime.strftime("%H00"))
-    if path.exists(gisSaveDir) and path.exists(staticSaveDir):
+    if path.exists(gisSaveDir):
         filesInTargets = listdir(gisSaveDir)
-        filesInTargets.extend(listdir(staticSaveDir))
+        if len(filesInTargets) > 0:
+            exit()
+    if path.exists(staticSaveDir):
+        filesInTargets = listdir(staticSaveDir)
         if len(filesInTargets) > 0:
             exit()
     # Set up a default figure and map
-    gisFig = plt.figure()
-    gisAx = plt.axes(projection=ccrs.epsg(3857))
-    gisAx.set_extent([-130, -60, 20, 50], crs=ccrs.PlateCarree())
+    if "--no-gis" not in sys.argv:
+        gisFig = plt.figure()
+        gisAx = plt.axes(projection=ccrs.epsg(3857))
+        gisAx.set_extent([-130, -60, 20, 50], crs=ccrs.PlateCarree())
+        plot_bulletin(gisAx, df)
+        px = 1/plt.rcParams["figure.dpi"]
+        set_size(1920*px, 1080*px, ax=gisAx)
+        extent = gisAx.get_tightbbox(gisFig.canvas.get_renderer()).transformed(gisFig.dpi_scale_trans.inverted())
+        Path(gisSaveDir).mkdir(parents=True, exist_ok=True)
+        if hasHelpers:
+            gisAxExtent = gisAx.get_extent(crs=ccrs.PlateCarree())
+            HDWX_helpers.writeJson(basePath, 1200, validTime.replace(minute=0), validTime.strftime("%H%M.png"), validTime, [f"{gisAxExtent[2]},{gisAxExtent[0]}", f"{gisAxExtent[3]},{gisAxExtent[1]}"], 300)
+            HDWX_helpers.saveImage(gisFig, path.join(gisSaveDir, validTime.strftime("%H%M.png")), transparent=True, bbox_inches=extent)
+        else:
+            gisFig.savefig(path.join(gisSaveDir, validTime.strftime("%H%M.png")), transparent=True, bbox_inches=extent) 
     fig = plt.figure()
     ax = plt.axes(projection=ccrs.LambertConformal())
     ax.set_extent([-130, -60, 20, 50], crs=ccrs.PlateCarree())
  
-    plot_bulletin(gisAx, df)
     addRTMAPressure(ax, validTime)
     addStationPlot(ax, validTime)
     plot_bulletin(ax, df)
-
-    px = 1/plt.rcParams["figure.dpi"]
-    set_size(1920*px, 1080*px, ax=gisAx)
-    extent = gisAx.get_tightbbox(gisFig.canvas.get_renderer()).transformed(gisFig.dpi_scale_trans.inverted())
-
-    Path(gisSaveDir).mkdir(parents=True, exist_ok=True)
-
-
-    if hasHelpers:
-        gisAxExtent = gisAx.get_extent(crs=ccrs.PlateCarree())
-        HDWX_helpers.writeJson(basePath, 1200, validTime.replace(minute=0), validTime.strftime("%H%M.png"), validTime, [f"{gisAxExtent[2]},{gisAxExtent[0]}", f"{gisAxExtent[3]},{gisAxExtent[1]}"], 300)
-        HDWX_helpers.saveImage(gisFig, path.join(gisSaveDir, validTime.strftime("%H%M.png")), transparent=True, bbox_inches=extent)
-    else:
-        gisFig.savefig(path.join(gisSaveDir, validTime.strftime("%H%M.png")), transparent=True, bbox_inches=extent) 
 
     ax.add_feature(cfeat.STATES.with_scale("50m"), linewidth=0.5)
     ax.add_feature(cfeat.COASTLINE.with_scale("50m"), linewidth=0.5)

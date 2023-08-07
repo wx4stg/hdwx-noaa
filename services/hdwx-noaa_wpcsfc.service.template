@@ -3,7 +3,7 @@ Description=hdwx-noaa_wpcsfc
 PartOf=hdwx.target
 
 [Service]
-ExecStart=$pathToPython surfacebulletin.py
+ExecStart=$pathToPython surfacebulletin.py $shouldGIS
 ExecStop=rsync -ulrH ./output/. $targetDir --exclude=productTypes/ --exclude="*.tmp"
 Restart=always
 RestartSec=300
